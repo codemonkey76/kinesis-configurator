@@ -140,7 +140,59 @@ impl SimpleComponent for App {
                     connect_clicked => AppMsg::SwitchLayout(8),
                 },
             }
-        }
+        },
+    gtk4::Separator {
+        set_orientation: gtk4::Orientation::Horizontal,
+    },
+
+    gtk4::Box {
+        set_orientation: gtk4::Orientation::Vertical,
+        set_spacing: 12,
+        set_margin_all: 24,
+    set_vexpand: true,
+    set_halign: gtk4::Align::Center,
+     gtk4::Label {
+                        set_label: "Keyboard Layout Editor",
+                        add_css_class: "title-1",
+                    },
+
+                    gtk4::Label {
+                        #[watch]
+                        set_label: &format!(
+                            "Layout {} - {} mappings",
+                            model.current_layout + 1,
+                            model.layouts[model.current_layout].mappings.len()
+                        ),
+                        add_css_class: "dim-label",
+                    },
+    // Placeholder for keyboard view
+                    gtk4::Frame {
+                        set_vexpand: true,
+                        set_width_request: 800,
+                        set_height_request: 400,
+
+                        gtk4::Box {
+                            set_orientation: gtk4::Orientation::Vertical,
+                            set_spacing: 12,
+                            set_margin_all: 48,
+                            set_valign: gtk4::Align::Center,
+                            set_halign: gtk4::Align::Center,
+
+                            gtk4::Image {
+                                set_icon_name: Some("input-keyboard-symbolic"),
+                                set_pixel_size: 64,
+                                add_css_class: "dim-label",
+                            },
+
+                            gtk4::Label {
+                                set_label: "Keyboard view coming soon",
+                                add_css_class: "title-2",
+                                add_css_class: "dim-label",
+                            },
+                        },
+                    },
+
+    }
     }
     },
     }
