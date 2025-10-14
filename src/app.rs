@@ -3,12 +3,13 @@ use gtk4::prelude::*;
 use libadwaita as adw;
 use relm4::{ComponentParts, ComponentSender, RelmApp, RelmWidgetExt, SimpleComponent};
 
-use crate::models::KinesisLayout;
+use crate::{components::KeyboardView, models::KinesisLayout};
 
 #[derive(Debug)]
 pub struct App {
     layouts: [KinesisLayout; 9],
     current_layout: usize,
+    keyboard_view: KeyboardView,
 }
 
 #[derive(Debug)]
@@ -168,28 +169,8 @@ impl SimpleComponent for App {
     // Placeholder for keyboard view
                     gtk4::Frame {
                         set_vexpand: true,
-                        set_width_request: 800,
-                        set_height_request: 400,
-
-                        gtk4::Box {
-                            set_orientation: gtk4::Orientation::Vertical,
-                            set_spacing: 12,
-                            set_margin_all: 48,
-                            set_valign: gtk4::Align::Center,
-                            set_halign: gtk4::Align::Center,
-
-                            gtk4::Image {
-                                set_icon_name: Some("input-keyboard-symbolic"),
-                                set_pixel_size: 64,
-                                add_css_class: "dim-label",
-                            },
-
-                            gtk4::Label {
-                                set_label: "Keyboard view coming soon",
-                                add_css_class: "title-2",
-                                add_css_class: "dim-label",
-                            },
-                        },
+                        #[wrap(Some)]
+                        set_child = model.keyboard_view.widget(),
                     },
 
     }
@@ -205,6 +186,7 @@ impl SimpleComponent for App {
         let model = App {
             layouts: std::array::from_fn(|_| KinesisLayout::new()),
             current_layout: 0,
+            keyboard_view: KeyboardView::new(),
         };
 
         let widgets = view_output!();
