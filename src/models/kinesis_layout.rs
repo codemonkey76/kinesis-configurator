@@ -24,10 +24,13 @@ impl KinesisLayout {
 
     /// Read layout from a file
     pub fn from_file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        let content = fs::read_to_string(path)?;
-        content
-            .parse()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+        match fs::read_to_string(&path) {
+            Ok(content) => content
+                .parse()
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e)),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(Self::new()),
+            Err(e) => Err(e),
+        }
     }
 
     /// Write layout to a file

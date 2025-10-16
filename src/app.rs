@@ -3,7 +3,10 @@ use gtk4::prelude::*;
 use libadwaita as adw;
 use relm4::{ComponentParts, ComponentSender, RelmApp, RelmWidgetExt, SimpleComponent};
 
-use crate::{components::KeyboardView, models::KinesisLayout};
+use crate::{
+    components::KeyboardView,
+    models::{KeyAction, KinesisLayout},
+};
 
 #[derive(Debug)]
 pub struct App {
@@ -142,36 +145,36 @@ impl SimpleComponent for App {
                 },
             }
         },
-    gtk4::Separator {
-        set_orientation: gtk4::Orientation::Horizontal,
+            gtk4::Separator {
+            set_orientation: gtk4::Orientation::Horizontal,
+        },
+
+            gtk4::Box {
+            set_orientation: gtk4::Orientation::Vertical,
+            set_spacing: 12,
+            set_margin_all: 24,
+            set_vexpand: true,
+            set_hexpand: true,
+            gtk4::Label {
+            set_label: "Keyboard Layout Editor",
+            add_css_class: "title-1",
+        },
+
+            gtk4::Label {
+                #[watch]
+                set_label: &format!(
+                    "Layout {} - {} mappings",
+                    model.current_layout + 1,
+                    model.layouts[model.current_layout].mappings.len()
+                ),
+                add_css_class: "dim-label",
+            },
+            gtk4::Frame {
+            set_halign: gtk4::Align::Center,
+            set_valign: gtk4::Align::Center,
+            #[wrap(Some)]
+            set_child = model.keyboard_view.widget(),
     },
-
-    gtk4::Box {
-        set_orientation: gtk4::Orientation::Vertical,
-        set_spacing: 12,
-        set_margin_all: 24,
-    set_vexpand: true,
-    set_halign: gtk4::Align::Center,
-     gtk4::Label {
-                        set_label: "Keyboard Layout Editor",
-                        add_css_class: "title-1",
-                    },
-
-                    gtk4::Label {
-                        #[watch]
-                        set_label: &format!(
-                            "Layout {} - {} mappings",
-                            model.current_layout + 1,
-                            model.layouts[model.current_layout].mappings.len()
-                        ),
-                        add_css_class: "dim-label",
-                    },
-    // Placeholder for keyboard view
-                    gtk4::Frame {
-                        set_vexpand: true,
-                        #[wrap(Some)]
-                        set_child = model.keyboard_view.widget(),
-                    },
 
     }
     }
@@ -199,6 +202,15 @@ impl SimpleComponent for App {
             AppMsg::SwitchLayout(idx) => {
                 if idx < 9 {
                     self.current_layout = idx;
+                    let layout = &self.layouts[idx];
+                    for mapping in &layout.mappings {
+                        match mapping {
+                            KeyAction::SimpleRemap { source, target } => {
+                                self.keyboard_view.set_remapping(source, target);
+                            }
+                            _ => {}
+                        }
+                    }
                     println!("Switched to layout {}", idx + 1);
                 }
             }
