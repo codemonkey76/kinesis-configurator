@@ -1,8 +1,10 @@
+use crate::app::AppMsg;
 use crate::constants;
 use gtk4::DrawingArea;
 use gtk4::gio;
 use gtk4::glib;
 use gtk4::prelude::*;
+use relm4::Sender;
 use rsvg;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -35,7 +37,7 @@ pub enum KeySection {
     RightThumb,
 }
 impl KeyboardView {
-    pub fn new() -> Self {
+    pub fn new(sender: Sender<AppMsg>) -> Self {
         let drawing_area = DrawingArea::new();
         drawing_area.set_size_request(1200, 500);
         drawing_area.set_hexpand(true);
@@ -47,6 +49,7 @@ impl KeyboardView {
 
         let gesture = gtk4::GestureClick::new();
         let keys_for_click = keys.clone();
+        let sender_for_click = sender.clone();
 
         gesture.connect_pressed(move |gesture, _n, x, y| {
             if let Some(widget) = gesture.widget() {
@@ -56,7 +59,7 @@ impl KeyboardView {
                 if let Some(key) = Self::find_key_at_position(&keys_for_click, x, y, width, height)
                 {
                     println!("Clicked key: {}", key.label);
-                    // TODO: Open a dialog to remap this key
+                    let _ = sender_for_click.send(AppMsg::KeyClicked(key.label.clone()));
                 }
             }
         });
@@ -114,6 +117,17 @@ impl KeyboardView {
         view
     }
 
+    pub fn clear_all_remappings(&mut self) {
+        self.remappings.borrow_mut().clear();
+
+        let mut keys = self.keys.borrow_mut();
+        for key in keys.iter_mut() {
+            key.remapped_label = None;
+        }
+
+        self.drawing_area.queue_draw();
+    }
+
     fn get_section_transform(section: KeySection) -> (f64, f64, f64) {
         let left_hand_offset_x = -constants::SPLIT_GAP - constants::HAND_WIDTH;
         let right_hand_offset_x = constants::SPLIT_GAP;
@@ -144,8 +158,8 @@ impl KeyboardView {
         let keys = keys.borrow();
 
         // Reverse the transformations from draw()
-        let keyboard_width = 680.0;
-        let keyboard_height = 350.0;
+        let keyboard_width = constants::KEYBOARD_WIDTH;
+        let keyboard_height = constants::KEYBOARD_HEIGHT;
 
         let scale_x = (width as f64 * 0.95) / keyboard_width;
         let scale_y = (height as f64 * 0.95) / keyboard_height;
@@ -526,7 +540,7 @@ impl KeyboardView {
         cr.set_line_width(constants::KEY_BORDER_WIDTH);
         let _ = cr.stroke();
 
-        if key.svg_data.is_some() {
+        if key.remapped_label.is_none() && key.svg_data.is_some() {
             Self::draw_svg_on_key(cr, key);
         } else {
             Self::draw_text_on_key(cr, key);
@@ -709,17 +723,6 @@ impl KeyboardView {
             );
             let _ = cr.show_text(display_text);
         }
-
-        // If remapped, show original label in smaller text at top
-        if key.remapped_label.is_some() {
-            Self::set_color(cr, constants::TEXT_SECONDARY);
-            let orig_extents = cr.text_extents(&key.label).unwrap();
-            cr.move_to(
-                key.x + (key.width - orig_extents.width()) / 2.0,
-                key.y + constants::REMAPPED_LABEL_Y_OFFSET,
-            );
-            let _ = cr.show_text(&key.label);
-        }
     }
     fn draw_rounded_rectangle(
         cr: &cairo::Context,
@@ -765,11 +768,5 @@ impl KeyboardView {
 
     pub fn widget(&self) -> &DrawingArea {
         &self.drawing_area
-    }
-}
-
-impl Default for KeyboardView {
-    fn default() -> Self {
-        Self::new()
     }
 }
